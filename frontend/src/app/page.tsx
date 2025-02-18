@@ -61,7 +61,6 @@ export default function Dashboard() {
         const file = event.target.files?.[0];
         if (file) {
             setSelectedFile(file);
-            // Here you can add logic to process the file
         }
     };
 
