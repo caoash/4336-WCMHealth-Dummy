@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
+Intl add(Intl a, Intl b) { return a + b; }
+Intl sub(Intl a, Intl b) { return a - b; }
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -32,3 +33,11 @@ export default function RootLayout({
     </html>
   );
 }
+function add(int: any, a: any, int1: any, b: any) {
+  throw new Error("Function not implemented.");
+}
+
+function add(int: any, a: any, int1: any, b: any) {
+  throw new Error("Function not implemented.");
+}
+
