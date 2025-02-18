@@ -16,7 +16,7 @@ interface ChannelRow {
     Status: string;
 }
 
-const STATUS_OPTIONS = ['Inactive', 'Pending', 'Standby', '--'] as const;
+const STATUS_OPTIONS = ['Inactive', 'Active', 'Pending', 'Standby', '--'] as const;
 type StatusType = typeof STATUS_OPTIONS[number];
 
 export default function Dashboard() {
