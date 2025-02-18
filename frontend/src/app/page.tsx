@@ -102,7 +102,7 @@ export default function Dashboard() {
         }
     };
 
-    // Test method
+    //Test method
     function subtract(a: number, b: number): number {
         return a - b;
     }
