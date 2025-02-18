@@ -102,7 +102,11 @@ export default function Dashboard() {
         }
     };
 
-
+    // Test method
+    function subtract(a: number, b: number): number {
+        return a - b;
+    }
+    
     //Test method, to be REMOVED!
     const handleUpdateStatus = () => {
         console.log('Updating status...');
