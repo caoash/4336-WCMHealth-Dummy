@@ -16,7 +16,7 @@ interface ChannelRow {
     Status: string;
 }
 
-const STATUS_OPTIONS = ['Active', 'Inactive', 'Pending', 'Standby', '--'] as const;
+const STATUS_OPTIONS = ['Inactive', 'Active', 'Pending', 'Standby', '--'] as const;
 type StatusType = typeof STATUS_OPTIONS[number];
 
 export default function Dashboard() {
@@ -41,8 +41,8 @@ export default function Dashboard() {
 
     const getStatusColor = (status: string) => {
         switch(status.toLowerCase()) {
-            case 'active': return 'text-green-600';
             case 'inactive': return 'text-red-600';
+            case 'active': return 'text-green-600';
             case 'pending': return 'text-yellow-600';
             case 'standby': return 'text-gray-600';
             default: return 'text-gray-600';
@@ -100,6 +100,16 @@ export default function Dashboard() {
         } catch (error) {
             console.error('Error deleting detail:', error);
         }
+    };
+
+
+    //Test method, to be REMOVED!
+    const handleUpdateStatus = () => {
+        console.log('Updating status...');
+        // Simulate an update action
+        setTimeout(() => {
+            console.log('Status updated!');
+        }, 1000);
     };
 
     return (
@@ -245,6 +255,5 @@ export default function Dashboard() {
             </div>
         </div>
     );
-
-    
+ 
 }
