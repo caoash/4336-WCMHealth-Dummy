@@ -107,6 +107,11 @@ export default function Dashboard() {
         return a - b;
     }
     
+    // Test method
+    function multiply(a: number, b: number): number {
+        return a * b;
+    }
+    
     //Test method, to be REMOVED!
     const handleUpdateStatus = () => {
         console.log('Updating status...');
