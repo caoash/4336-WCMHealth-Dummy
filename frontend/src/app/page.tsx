@@ -41,8 +41,8 @@ export default function Dashboard() {
 
     const getStatusColor = (status: string) => {
         switch(status.toLowerCase()) {
-            case 'active': return 'text-green-600';
             case 'inactive': return 'text-red-600';
+            case 'active': return 'text-green-600';
             case 'pending': return 'text-yellow-600';
             case 'standby': return 'text-gray-600';
             default: return 'text-gray-600';
