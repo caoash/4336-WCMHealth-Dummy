@@ -102,6 +102,7 @@ export default function Dashboard() {
     };
 
 
+    //Delete these methods later. Only used for test purposes
     //Test method, to be REMOVED!
     const handleUpdateStatus = () => {
         console.log('Updating status...');
