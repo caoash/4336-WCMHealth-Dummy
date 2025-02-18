@@ -102,6 +102,17 @@ export default function Dashboard() {
         }
     };
 
+        // Test Method, REMOVE
+        const testProcess = () => {
+            var process = true;
+            console.log("Processing...");
+    
+            setTimeout(() => {
+                console.log("Done!");
+                process = false;
+            }, 2000);
+        };
+
     return (
         <div className="container mx-auto px-4 py-8">
             <div className="flex justify-between items-center mb-6">
