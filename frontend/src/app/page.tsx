@@ -29,6 +29,7 @@ export default function Dashboard() {
         Status: '' as StatusType
     });
     const [showAddForm, setShowAddForm] = useState(false);
+    const [threshold, setThreshold] = useState(50); // Default threshold value
 
     useEffect(() => {
         fetch('/api/dashboard')
@@ -138,6 +139,24 @@ export default function Dashboard() {
                     )}
                 </div>
             </div>
+
+            <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
+                <div className="flex items-center gap-4">
+                    <span className="text-xs font-medium text-gray-500">Threshold:</span>
+                    <div className="flex-1 flex items-center gap-4">
+                        <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={threshold}
+                            onChange={(e) => setThreshold(Number(e.target.value))}
+                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#5f43b2]"
+                        />
+                        <span className="text-xs font-medium text-gray-500 w-8">{threshold}%</span>
+                    </div>
+                </div>
+            </div>
+
             <div className="mb-8 bg-white p-6 pt-4 pb-2">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-semibold text-[#5f43b2]">System Details</h2>
