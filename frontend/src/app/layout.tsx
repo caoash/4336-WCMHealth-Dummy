@@ -5,7 +5,6 @@ import "./globals.css";
 //Intl sub(Intl a, Intl b) { return a - b; }
 //Intl mult(Intl a, Intl b) { return a * b; }
 //Intl div(Intl a, Intl b) { return a / b; }
-//Intl mod(Intl a, Intl b) { return a % b; }
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
