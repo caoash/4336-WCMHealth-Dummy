@@ -4,10 +4,10 @@ Junior Capstone 4336 JIC WCM Health project. Using dummy data due to confidentia
 
 Client: SLB
 
-# Version 0.2.0
+# Version 0.3.0
 
 ## New Features 
-- Added functionality to upload csv file that contains tool dump data
+- Added functionality to process the input dummy data 
 - Added functionality to enter parameters 
 
 
