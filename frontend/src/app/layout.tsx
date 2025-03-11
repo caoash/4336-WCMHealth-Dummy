@@ -21,6 +21,7 @@ export const metadata: Metadata = {
   description: "For JIC 4336",
 };
 
+// Function for root layout
 export default function RootLayout({
   children,
 }: Readonly<{
