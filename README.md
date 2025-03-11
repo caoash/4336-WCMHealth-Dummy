@@ -8,7 +8,7 @@ Client: SLB
 
 ## New Features 
 - Added functionality to process the input dummy data 
-- Added functionality to enter parameters 
+- Added threshold for decision-making algorithm
 
 
 ## Bug Fixes
