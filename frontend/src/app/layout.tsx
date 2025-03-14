@@ -1,11 +1,19 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+<main
 //Intl add(Intl a, Intl b) { return a + b; }
 //Intl sub(Intl a, Intl b) { return a - b; }
 //Intl mult(Intl a, Intl b) { return a * b; }
 //Intl div(Intl a, Intl b) { return a / b; }
 //Int mod(Intl a, Intl b) {return a % b; }
+=======
+//Intl add(Intl a, Intl b) { return a + b; }
+//Intl sub(Intl a, Intl b) { return a - b; }
+//Intl mult(Intl a, Intl b) { return a * b;}
+//Intl div(Intl a, Intl b) { return a / b; }
+//Int mod(Intl a, Intl b) {return a % b; }       
+justin-change-1
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
