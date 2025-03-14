@@ -1,7 +1,7 @@
 BEGIN TRANSACTION;
 
 INSERT INTO DetailRow (Details, Value, Status) VALUES
-    ('Algorithm Version', '1.0', '--'),
+    ('Algorithm Version', '1.0', 'Inactive'),
     ('Memory Board', 'Memory Board Ok', 'Inactive'),
     ('HV1r Board', 'No HV Board Failrue', 'Pending'),
     ('NAU13 Board', 'NAU13 Board Failure', 'Active'),
