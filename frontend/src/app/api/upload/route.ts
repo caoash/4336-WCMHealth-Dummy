@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { parse } from 'csv-parse/sync'
+console.log("Upload route is being executed");
 
 export async function POST(request: Request) {
     try {
@@ -11,6 +13,18 @@ export async function POST(request: Request) {
 
         // Here you can add logic to process the CSV file
         // For example, parsing it and storing the data
+
+        // Read the file contents as text
+        const fileText = await file.text();
+
+        // Parse the CSV text into a JSON format
+        const records = parse(fileText, {
+            columns: true,  // Treat first row as column headers
+            skip_empty_lines: true
+        });
+
+        //Logs CSV Data
+        console.log("Parsed CSV Data:", records);
 
         return NextResponse.json({ message: 'File uploaded successfully' });
     } catch (error) {

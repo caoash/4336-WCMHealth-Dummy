@@ -58,10 +58,31 @@ export default function Dashboard() {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
-    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async(event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
             setSelectedFile(file);
+        }
+
+        //Create FormData object to send the file
+        const formData = new FormData();
+        formData.append("file", file as Blob);
+
+        try {
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to upload file");
+            }
+
+            const result = await response.json();
+            console.log("File processed:", result);
+            // Do something with result
+        } catch (error) {
+            console.error("Upload error:", error);
         }
     };
 
