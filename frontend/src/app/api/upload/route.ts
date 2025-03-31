@@ -9,6 +9,15 @@ interface CsvRow {
     [key: string]: string | number;
 }
 
+// Define the status options
+const STATUS_OPTIONS = ['Inactive', 'Active', 'Pending', 'Standby'];
+
+function hashStatus(ssw1Value: number): string {
+    // Hash function using modulo and ssw1Value to distribute statuses better
+    const statusIndex = Math.abs(Math.floor(Math.sin(ssw1Value) * 1000)) % STATUS_OPTIONS.length;
+    return STATUS_OPTIONS[statusIndex];
+}
+
 export async function POST(request: Request) {
     try {
         const formData = await request.formData();
@@ -29,7 +38,7 @@ export async function POST(request: Request) {
         }) as CsvRow[];
 
         // Only Parse first few (takes too long otherwise)
-        const limitedRecords = records.slice(0, 20000);
+        const limitedRecords = records.slice(0, 8000);
 
         // Database connection
         const dbPath = path.join(process.cwd(), 'src', 'db', 'database.sqlite');
@@ -45,17 +54,18 @@ export async function POST(request: Request) {
         `);
 
         // Define the columns to ignore when creating Details
-        const ignoredColumns = ['Unnamed: 0', 'TTEM'];
+        const ignoredColumns = ['Unnamed: 0', 'SSW1'];
 
         let entryCount = 0; // Initialize counter
 
         for (const row of limitedRecords) {
             entryCount++; // Increment entry count
 
-            const ttemValue = parseFloat(row['TTEM'] as string); // Read TTEM correctly
+            // Get the SSW1 value from the 10th column (index starts from 0)
+            const ssw1Value = parseFloat(row['SSW1'] as string); // Read SSW1 correctly
 
-            if (isNaN(ttemValue)) {
-                console.warn(`Invalid TTEM value at entry #${entryCount}:`, row['TTEM']);
+            if (isNaN(ssw1Value)) {
+                console.warn(`Invalid SSW1 value at entry #${entryCount}:`, row['SSW1']);
                 continue; // Skip invalid rows
             }
 
@@ -64,16 +74,16 @@ export async function POST(request: Request) {
                 console.log(`Processing entry #${entryCount}...`);
             }
 
-            // Determine status based on TTEM value
-            const status = ttemValue < 20 ? 'Inactive' : ttemValue < 50 ? 'Pending' : 'Active';
+            // Assign status based on SSW1 value
+            const status = hashStatus(ssw1Value);
 
-            // Create Details by combining all columns except ignored ones
+            // Combinine all columns except ignored ones
             const details = Object.keys(row)
                 .filter((col) => !ignoredColumns.includes(col))
                 .map((col) => `${col}: ${row[col]}`)
                 .join(', ');
 
-            const value = ttemValue.toString();
+            const value = ssw1Value.toString();
 
             // Insert data into the database
             await stmt.run([details, value, status]);
