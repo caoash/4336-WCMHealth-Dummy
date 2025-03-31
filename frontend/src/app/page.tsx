@@ -25,6 +25,13 @@ export default function Dashboard() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [threshold, setThreshold] = useState(50); // Default threshold value
     const [showAddForm, setShowAddForm] = useState(false);
+    const [newDetail, setNewDetail] = useState({
+        Details: '',
+        Value: '',
+        Status: '' as StatusType,
+    });
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(15);
 
     useEffect(() => {
         fetchDetailsAndChannels();
@@ -36,10 +43,21 @@ export default function Dashboard() {
             const data = await res.json();
             setDetails(data.details);
             setChannels(data.channels);
+
+            // Adjust current page if needed
+            setCurrentPage(prev => {
+                const totalPages = Math.ceil(data.details.length / itemsPerPage);
+                return prev > totalPages ? Math.max(1, totalPages) : prev;
+            });
         } catch (error) {
             console.error('Error fetching data:', error);
         }
     };
+
+    // Calculate current items for pagination
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentDetails = details.slice(indexOfFirstItem, indexOfLastItem);
 
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
@@ -91,6 +109,45 @@ export default function Dashboard() {
             } catch (error) {
                 console.error('Upload error:', error);
             }
+        }
+    };
+
+    const handleAddDetail = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const response = await fetch('/api/dashboard/detail', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newDetail),
+            });
+
+            if (!response.ok) throw new Error('Failed to add detail');
+
+            // Refresh all data after adding the detail
+            await fetchDetailsAndChannels();
+
+            // Reset form and close
+            setNewDetail({ Details: '', Value: '', Status: '' as StatusType });
+            setShowAddForm(false);
+        } catch (error) {
+            console.error('Error adding detail:', error);
+        }
+    };
+
+    const handleDeleteDetail = async (id: number) => {
+        try {
+            const response = await fetch(`/api/dashboard/detail/${id}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) throw new Error('Failed to delete detail');
+
+            // Refresh all data after deletion
+            await fetchDetailsAndChannels();
+        } catch (error) {
+            console.error('Error deleting detail:', error);
         }
     };
 
@@ -150,7 +207,68 @@ export default function Dashboard() {
 
             {/* System Details Table */}
             <div className="mb-8 bg-white p-6 pt-4 pb-2 rounded-lg shadow">
-                <h2 className="text-xl font-semibold text-[#5f43b2] mb-4">System Details</h2>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold text-[#5f43b2]">System Details</h2>
+                    <button
+                        onClick={() => setShowAddForm(!showAddForm)}
+                        className="px-3 py-1 text-xs bg-[#5f43b2] text-white rounded-md hover:bg-[#4a3590] transition-colors"
+                    >
+                        {showAddForm ? 'Cancel' : 'Add Detail'}
+                    </button>
+                </div>
+
+                {showAddForm && (
+                    <form onSubmit={handleAddDetail} className="mb-4 p-4 bg-gray-50 border border-gray-300">
+                        <div className="grid grid-cols-3 gap-4">
+                            <div>
+                                <input
+                                    type="text"
+                                    placeholder="Details"
+                                    value={newDetail.Details}
+                                    onChange={(e) =>
+                                        setNewDetail({ ...newDetail, Details: e.target.value })
+                                    }
+                                    className="w-full px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#5f43b2] text-gray-500"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <input
+                                    type="text"
+                                    placeholder="Value"
+                                    value={newDetail.Value}
+                                    onChange={(e) => setNewDetail({ ...newDetail, Value: e.target.value })}
+                                    className="w-full px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#5f43b2] text-gray-500"
+                                    required
+                                />
+                            </div>
+                            <div className="flex gap-2">
+                                <select
+                                    value={newDetail.Status}
+                                    onChange={(e) =>
+                                        setNewDetail({ ...newDetail, Status: e.target.value as StatusType })
+                                    }
+                                    className="flex-1 px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#5f43b2] text-gray-500"
+                                    required
+                                >
+                                    <option value="" className="text-gray-500">Select Status</option>
+                                    {STATUS_OPTIONS.map((status) => (
+                                        <option key={status} value={status} className="text-gray-500">
+                                            {status}
+                                        </option>
+                                    ))}
+                                </select>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-1 text-xs bg-[#5f43b2] text-white rounded-md hover:bg-[#4a3590] transition-colors"
+                                >
+                                    Add
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                )}
+
                 <div className="overflow-x-auto">
                     <table className="min-w-full border border-gray-300">
                         <thead className="bg-gray-50 border-b">
@@ -164,25 +282,54 @@ export default function Dashboard() {
                                 <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                                     Status
                                 </th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-10"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                            {details.map((detail, index) => (
+                            {currentDetails.map((detail, index) => (
                                 <tr key={detail.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
                                     <td className="px-6 py-2 whitespace-nowrap text-[#5f43b2] text-xs">{detail.Details}</td>
                                     <td className="px-6 py-2 whitespace-nowrap text-xs text-gray-500">{detail.Value}</td>
-                                    <td
-                                        className={`px-6 py-2 whitespace-nowrap text-xs ${getStatusColor(
-                                            detail.Status
-                                        )}`}
-                                    >
+                                    <td className={`px-6 py-2 whitespace-nowrap text-xs ${getStatusColor(detail.Status)}`}>
                                         {detail.Status}
+                                    </td>
+                                    <td className="px-6 py-2 whitespace-nowrap text-xs">
+                                        <button
+                                            onClick={() => handleDeleteDetail(detail.id)}
+                                            className="text-gray-400 hover:text-red-500 transition-colors"
+                                            title="Delete"
+                                        >
+                                            ×
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {details.length > 0 && (
+                    <div className="flex justify-end items-center gap-4 mt-4">
+                        <button
+                            onClick={() => setCurrentPage(p => p - 1)}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1 text-xs bg-[#5f43b2] text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Previous
+                        </button>
+                        <span className="text-xs text-gray-500">
+                            Page {currentPage} of {Math.ceil(details.length / itemsPerPage)}
+                        </span>
+                        <button
+                            onClick={() => setCurrentPage(p => p + 1)}
+                            disabled={currentPage === Math.ceil(details.length / itemsPerPage)}
+                            className="px-3 py-1 text-xs bg-[#5f43b2] text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Channel Data Table */}
@@ -208,11 +355,7 @@ export default function Dashboard() {
                                 <tr key={channel.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
                                     <td className="px-6 py-2 whitespace-nowrap text-[#5f43b2] text-xs">{channel.Channel}</td>
                                     <td className="px-6 py-2 whitespace-nowrap text-xs text-gray-500">{channel.Name}</td>
-                                    <td
-                                        className={`px-6 py-2 whitespace-nowrap text-xs ${getStatusColor(
-                                            channel.Status
-                                        )}`}
-                                    >
+                                    <td className={`px-6 py-2 whitespace-nowrap text-xs ${getStatusColor(channel.Status)}`}>
                                         {channel.Status}
                                     </td>
                                 </tr>
