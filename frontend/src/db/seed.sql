@@ -1,5 +1,23 @@
 BEGIN TRANSACTION;
 
+DROP TABLE IF EXISTS DetailRow;
+DROP TABLE IF EXISTS ChannelRow;
+
+CREATE TABLE DetailRow (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Details TEXT NOT NULL,
+    Value TEXT NOT NULL,
+    Status TEXT NOT NULL
+);
+
+CREATE TABLE ChannelRow (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Channel TEXT NOT NULL,
+    Name TEXT NOT NULL,
+    Status TEXT NOT NULL
+);
+
+
 INSERT INTO DetailRow (Details, Value, Status) VALUES
     ('Algorithm Version', '1.0', 'Inactive'),
     ('Memory Board', 'Memory Board Ok', 'Inactive'),
