@@ -1,6 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Papa from 'papaparse';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 interface DetailRow {
     id: number;
@@ -24,7 +39,7 @@ const parseDetailsString = (detailsString: string): { [key: string]: string } =>
     if (!detailsString) return {};
     return detailsString.split(', ').reduce((acc, pair) => {
         const [key, ...valueParts] = pair.split(':');
-        const value = valueParts.join(':').trim(); // Handle potential colons in values
+        const value = valueParts.join(':').trim();
         if (key) {
             acc[key.trim()] = value;
         }
@@ -45,6 +60,11 @@ export default function Dashboard() {
     });
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(15);
+
+    // States for CSV Visualization
+    const [visualizationMode, setVisualizationMode] = useState(false);
+    const [csvData, setCsvData] = useState<string[][] | null>(null);
+    const [selectedFeature, setSelectedFeature] = useState<string>('');
 
     useEffect(() => {
         fetchDetailsAndChannels();
@@ -67,39 +87,22 @@ export default function Dashboard() {
         }
     };
 
-    // Calculate current items for pagination
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentDetails = details.slice(indexOfFirstItem, indexOfLastItem);
-
-    // Determine dynamic headers from the first item if available
-    const dynamicHeaders = currentDetails.length > 0
-        ? Object.keys(parseDetailsString(currentDetails[0].Details))
-        : [];
-
-    const getStatusColor = (status: string) => {
-        switch (status.toLowerCase()) {
-            case 'inactive':
-                return 'text-red-600';
-            case 'active':
-                return 'text-green-600';
-            case 'pending':
-                return 'text-yellow-600';
-            case 'standby':
-                return 'text-gray-600';
-            default:
-                return 'text-gray-600';
+    // Parse the CSV file using Papa Parse
+    const parseCsvFile = () => {
+        if (selectedFile) {
+            Papa.parse(selectedFile, {
+                complete: function (results) {
+                    // Expecting a 2D array: first row = headers, rest = data rows
+                    setCsvData(results.data as string[][]);
+                },
+                error: function (error) {
+                    console.error('Error parsing CSV:', error);
+                },
+            });
         }
     };
 
-    const formatFileSize = (bytes: number) => {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    };
-
+    // Handle file upload
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
@@ -169,6 +172,61 @@ export default function Dashboard() {
         }
     };
 
+    // Calculate current items for pagination
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentDetails = details.slice(indexOfFirstItem, indexOfLastItem);
+
+    // Determine dynamic headers from the first item if available
+    const dynamicHeaders =
+        currentDetails.length > 0 ? Object.keys(parseDetailsString(currentDetails[0].Details)) : [];
+
+    const getStatusColor = (status: string) => {
+        switch (status.toLowerCase()) {
+            case 'inactive':
+                return 'text-red-600';
+            case 'active':
+                return 'text-green-600';
+            case 'pending':
+                return 'text-yellow-600';
+            case 'standby':
+                return 'text-gray-600';
+            default:
+                return 'text-gray-600';
+        }
+    };
+
+    const formatFileSize = (bytes: number) => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    // Prepare chart data when a feature is selected
+    let chartData = null;
+    if (csvData && selectedFeature) {
+        const headers = csvData[0];
+        const featureIndex = headers.indexOf(selectedFeature);
+        if (featureIndex !== -1) {
+            const labels = csvData.slice(1).map((_, i) => `Row ${i + 1}`);
+            const dataPoints = csvData.slice(1).map(row => Number(row[featureIndex]));
+            chartData = {
+                labels,
+                datasets: [
+                    {
+                        label: selectedFeature,
+                        data: dataPoints,
+                        borderColor: 'rgba(75,192,192,1)',
+                        backgroundColor: 'rgba(75,192,192,0.2)',
+                        fill: false,
+                    },
+                ],
+            };
+        }
+    }
+
     return (
         <div className="container mx-auto px-4 py-8">
             {/* Header and File Upload Section */}
@@ -204,6 +262,48 @@ export default function Dashboard() {
                     )}
                 </div>
             </div>
+
+            {/* Visualization Button */}
+            <div className="mb-6">
+                <button
+                    onClick={() => {
+                        // Toggle visualization mode and parse CSV if needed
+                        setVisualizationMode(prev => !prev);
+                        if (!csvData && selectedFile) {
+                            parseCsvFile();
+                        }
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 transition-colors"
+                >
+                    {visualizationMode ? 'Hide Visualization' : 'Visualize CSV'}
+                </button>
+            </div>
+
+            {/* CSV Visualization Section */}
+            {visualizationMode && csvData && (
+                <div className="mb-8 bg-white p-6 rounded-lg shadow">
+                    <h2 className="text-xl font-semibold text-[#5f43b2] mb-4">CSV Visualization</h2>
+                    <div className="mb-4">
+                        <select
+                            value={selectedFeature}
+                            onChange={(e) => setSelectedFeature(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#5f43b2]"
+                        >
+                            <option value="">Select Feature</option>
+                            {csvData[0].map((header, idx) => (
+                                <option key={idx} value={header}>
+                                    {header}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    {selectedFeature && chartData && (
+                        <div>
+                            <Line data={chartData} />
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Threshold Section */}
             <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
@@ -291,7 +391,6 @@ export default function Dashboard() {
                     <table className="min-w-full border border-gray-300">
                         <thead className="bg-gray-50 border-b">
                             <tr>
-                                {/* Dynamic Headers from Details */}
                                 {dynamicHeaders.map((header) => (
                                     <th
                                         key={header}
@@ -300,29 +399,25 @@ export default function Dashboard() {
                                         {header}
                                     </th>
                                 ))}
-                                {/* Static Headers */}
                                 <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                                     Value
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                                     Status
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-10"></th> {/* Delete button column */}
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-10"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                             {currentDetails.map((detail, index) => {
-                                // Parse the details string for the current row
                                 const parsedDetails = parseDetailsString(detail.Details);
                                 return (
                                     <tr key={detail.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
-                                        {/* Dynamic Cells */}
                                         {dynamicHeaders.map((header) => (
                                             <td key={header} className="px-6 py-2 whitespace-nowrap text-xs text-gray-500">
-                                                {parsedDetails[header] || ''} {/* Display value or empty string */}
+                                                {parsedDetails[header] || ''}
                                             </td>
                                         ))}
-                                        {/* Static Cells */}
                                         <td className="px-6 py-2 whitespace-nowrap text-xs text-gray-500">{detail.Value}</td>
                                         <td className={`px-6 py-2 whitespace-nowrap text-xs ${getStatusColor(detail.Status)}`}>
                                             {detail.Status}
@@ -343,7 +438,6 @@ export default function Dashboard() {
                     </table>
                 </div>
 
-                {/* Pagination Controls */}
                 {details.length > 0 && (
                     <div className="flex justify-end items-center gap-4 mt-4">
                         <button
