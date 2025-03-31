@@ -47,6 +47,10 @@ export async function POST(request: Request) {
             driver: sqlite3.Database,
         });
 
+        // Clear existing data from tables before inserting new data
+        await db.run('DELETE FROM DetailRow');
+        await db.run('DELETE FROM ChannelRow');
+
         // Prepare insert statement for DetailRow
         const stmt = await db.prepare(`
             INSERT INTO DetailRow (Details, Value, Status)

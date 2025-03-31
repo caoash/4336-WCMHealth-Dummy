@@ -19,6 +19,19 @@ interface ChannelRow {
 const STATUS_OPTIONS = ['Inactive', 'Active', 'Pending', 'Standby', '--'] as const;
 type StatusType = typeof STATUS_OPTIONS[number];
 
+// Helper function to parse the Details string
+const parseDetailsString = (detailsString: string): { [key: string]: string } => {
+    if (!detailsString) return {};
+    return detailsString.split(', ').reduce((acc, pair) => {
+        const [key, ...valueParts] = pair.split(':');
+        const value = valueParts.join(':').trim(); // Handle potential colons in values
+        if (key) {
+            acc[key.trim()] = value;
+        }
+        return acc;
+    }, {} as { [key: string]: string });
+};
+
 export default function Dashboard() {
     const [details, setDetails] = useState<DetailRow[]>([]);
     const [channels, setChannels] = useState<ChannelRow[]>([]);
@@ -58,6 +71,11 @@ export default function Dashboard() {
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentDetails = details.slice(indexOfFirstItem, indexOfLastItem);
+
+    // Determine dynamic headers from the first item if available
+    const dynamicHeaders = currentDetails.length > 0
+        ? Object.keys(parseDetailsString(currentDetails[0].Details))
+        : [];
 
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
@@ -273,37 +291,54 @@ export default function Dashboard() {
                     <table className="min-w-full border border-gray-300">
                         <thead className="bg-gray-50 border-b">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                    Details
-                                </th>
+                                {/* Dynamic Headers from Details */}
+                                {dynamicHeaders.map((header) => (
+                                    <th
+                                        key={header}
+                                        className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider"
+                                    >
+                                        {header}
+                                    </th>
+                                ))}
+                                {/* Static Headers */}
                                 <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                                     Value
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                                     Status
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-10"></th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-10"></th> {/* Delete button column */}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                            {currentDetails.map((detail, index) => (
-                                <tr key={detail.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
-                                    <td className="px-6 py-2 whitespace-nowrap text-[#5f43b2] text-xs">{detail.Details}</td>
-                                    <td className="px-6 py-2 whitespace-nowrap text-xs text-gray-500">{detail.Value}</td>
-                                    <td className={`px-6 py-2 whitespace-nowrap text-xs ${getStatusColor(detail.Status)}`}>
-                                        {detail.Status}
-                                    </td>
-                                    <td className="px-6 py-2 whitespace-nowrap text-xs">
-                                        <button
-                                            onClick={() => handleDeleteDetail(detail.id)}
-                                            className="text-gray-400 hover:text-red-500 transition-colors"
-                                            title="Delete"
-                                        >
-                                            ×
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                            {currentDetails.map((detail, index) => {
+                                // Parse the details string for the current row
+                                const parsedDetails = parseDetailsString(detail.Details);
+                                return (
+                                    <tr key={detail.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
+                                        {/* Dynamic Cells */}
+                                        {dynamicHeaders.map((header) => (
+                                            <td key={header} className="px-6 py-2 whitespace-nowrap text-xs text-gray-500">
+                                                {parsedDetails[header] || ''} {/* Display value or empty string */}
+                                            </td>
+                                        ))}
+                                        {/* Static Cells */}
+                                        <td className="px-6 py-2 whitespace-nowrap text-xs text-gray-500">{detail.Value}</td>
+                                        <td className={`px-6 py-2 whitespace-nowrap text-xs ${getStatusColor(detail.Status)}`}>
+                                            {detail.Status}
+                                        </td>
+                                        <td className="px-6 py-2 whitespace-nowrap text-xs">
+                                            <button
+                                                onClick={() => handleDeleteDetail(detail.id)}
+                                                className="text-gray-400 hover:text-red-500 transition-colors"
+                                                title="Delete"
+                                            >
+                                                ×
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
