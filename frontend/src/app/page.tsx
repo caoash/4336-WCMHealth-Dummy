@@ -23,30 +23,54 @@ export default function Dashboard() {
     const [details, setDetails] = useState<DetailRow[]>([]);
     const [channels, setChannels] = useState<ChannelRow[]>([]);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [threshold, setThreshold] = useState(50); // Default threshold value
+    const [showAddForm, setShowAddForm] = useState(false);
     const [newDetail, setNewDetail] = useState({
         Details: '',
         Value: '',
-        Status: '' as StatusType
+        Status: '' as StatusType,
     });
-    const [showAddForm, setShowAddForm] = useState(false);
-    const [threshold, setThreshold] = useState(50); // Default threshold value
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(15);
 
     useEffect(() => {
-        fetch('/api/dashboard')
-            .then(res => res.json())
-            .then(data => {
-                setDetails(data.details);
-                setChannels(data.channels);
-            });
+        fetchDetailsAndChannels();
     }, []);
 
+    const fetchDetailsAndChannels = async () => {
+        try {
+            const res = await fetch('/api/dashboard');
+            const data = await res.json();
+            setDetails(data.details);
+            setChannels(data.channels);
+
+            // Adjust current page if needed
+            setCurrentPage(prev => {
+                const totalPages = Math.ceil(data.details.length / itemsPerPage);
+                return prev > totalPages ? Math.max(1, totalPages) : prev;
+            });
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+    };
+
+    // Calculate current items for pagination
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentDetails = details.slice(indexOfFirstItem, indexOfLastItem);
+
     const getStatusColor = (status: string) => {
-        switch(status.toLowerCase()) {
-            case 'inactive': return 'text-red-600';
-            case 'active': return 'text-green-600';
-            case 'pending': return 'text-yellow-600';
-            case 'standby': return 'text-gray-600';
-            default: return 'text-gray-600';
+        switch (status.toLowerCase()) {
+            case 'inactive':
+                return 'text-red-600';
+            case 'active':
+                return 'text-green-600';
+            case 'pending':
+                return 'text-yellow-600';
+            case 'standby':
+                return 'text-gray-600';
+            default:
+                return 'text-gray-600';
         }
     };
 
@@ -58,10 +82,33 @@ export default function Dashboard() {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
-    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
             setSelectedFile(file);
+
+            // Create FormData to send file to backend
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to upload file');
+                }
+
+                const result = await response.json();
+                console.log('File processed:', result);
+
+                // Refresh data after upload
+                await fetchDetailsAndChannels();
+            } catch (error) {
+                console.error('Upload error:', error);
+            }
         }
     };
 
@@ -78,8 +125,10 @@ export default function Dashboard() {
 
             if (!response.ok) throw new Error('Failed to add detail');
 
-            const updatedDetails = await fetch('/api/dashboard').then(res => res.json());
-            setDetails(updatedDetails.details);
+            // Refresh all data after adding the detail
+            await fetchDetailsAndChannels();
+
+            // Reset form and close
             setNewDetail({ Details: '', Value: '', Status: '' as StatusType });
             setShowAddForm(false);
         } catch (error) {
@@ -95,8 +144,8 @@ export default function Dashboard() {
 
             if (!response.ok) throw new Error('Failed to delete detail');
 
-            const updatedDetails = await fetch('/api/dashboard').then(res => res.json());
-            setDetails(updatedDetails.details);
+            // Refresh all data after deletion
+            await fetchDetailsAndChannels();
         } catch (error) {
             console.error('Error deleting detail:', error);
         }
@@ -104,19 +153,28 @@ export default function Dashboard() {
 
     return (
         <div className="container mx-auto px-4 py-8">
+            {/* Header and File Upload Section */}
             <div className="flex justify-between items-center mb-6">
                 <h1 className="font-bold text-lg pl-6 text-[#5f43b2]">Board Diagnostics - Field Test</h1>
                 <div className="relative flex items-center">
-                    <label htmlFor="tool-dump" className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5f43b2] cursor-pointer">
+                    <label
+                        htmlFor="tool-dump"
+                        className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5f43b2] cursor-pointer"
+                    >
                         <span className="mr-2">Tool Dump</span>
-                        <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg
+                            className="h-4 w-4 text-gray-500"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
                     </label>
                     <input
                         id="tool-dump"
                         type="file"
-                        accept=".csv,.txt"
+                        accept=".csv"
                         onChange={handleFileUpload}
                         className="hidden"
                     />
@@ -129,6 +187,7 @@ export default function Dashboard() {
                 </div>
             </div>
 
+            {/* Threshold Section */}
             <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
                 <div className="flex items-center gap-4">
                     <span className="text-xs font-medium text-gray-500">Threshold:</span>
@@ -146,7 +205,8 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            <div className="mb-8 bg-white p-6 pt-4 pb-2">
+            {/* System Details Table */}
+            <div className="mb-8 bg-white p-6 pt-4 pb-2 rounded-lg shadow">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-semibold text-[#5f43b2]">System Details</h2>
                     <button
@@ -165,7 +225,9 @@ export default function Dashboard() {
                                     type="text"
                                     placeholder="Details"
                                     value={newDetail.Details}
-                                    onChange={(e) => setNewDetail({...newDetail, Details: e.target.value})}
+                                    onChange={(e) =>
+                                        setNewDetail({ ...newDetail, Details: e.target.value })
+                                    }
                                     className="w-full px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#5f43b2] text-gray-500"
                                     required
                                 />
@@ -175,7 +237,7 @@ export default function Dashboard() {
                                     type="text"
                                     placeholder="Value"
                                     value={newDetail.Value}
-                                    onChange={(e) => setNewDetail({...newDetail, Value: e.target.value})}
+                                    onChange={(e) => setNewDetail({ ...newDetail, Value: e.target.value })}
                                     className="w-full px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#5f43b2] text-gray-500"
                                     required
                                 />
@@ -183,13 +245,17 @@ export default function Dashboard() {
                             <div className="flex gap-2">
                                 <select
                                     value={newDetail.Status}
-                                    onChange={(e) => setNewDetail({...newDetail, Status: e.target.value as StatusType})}
+                                    onChange={(e) =>
+                                        setNewDetail({ ...newDetail, Status: e.target.value as StatusType })
+                                    }
                                     className="flex-1 px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#5f43b2] text-gray-500"
                                     required
                                 >
                                     <option value="" className="text-gray-500">Select Status</option>
-                                    {STATUS_OPTIONS.map(status => (
-                                        <option key={status} value={status} className="text-gray-500">{status}</option>
+                                    {STATUS_OPTIONS.map((status) => (
+                                        <option key={status} value={status} className="text-gray-500">
+                                            {status}
+                                        </option>
                                     ))}
                                 </select>
                                 <button
@@ -207,14 +273,20 @@ export default function Dashboard() {
                     <table className="min-w-full border border-gray-300">
                         <thead className="bg-gray-50 border-b">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Details</th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Value</th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Details
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Value
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Status
+                                </th>
                                 <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-10"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                            {details.map((detail, index) => (
+                            {currentDetails.map((detail, index) => (
                                 <tr key={detail.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
                                     <td className="px-6 py-2 whitespace-nowrap text-[#5f43b2] text-xs">{detail.Details}</td>
                                     <td className="px-6 py-2 whitespace-nowrap text-xs text-gray-500">{detail.Value}</td>
@@ -235,16 +307,47 @@ export default function Dashboard() {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {details.length > 0 && (
+                    <div className="flex justify-end items-center gap-4 mt-4">
+                        <button
+                            onClick={() => setCurrentPage(p => p - 1)}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1 text-xs bg-[#5f43b2] text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Previous
+                        </button>
+                        <span className="text-xs text-gray-500">
+                            Page {currentPage} of {Math.ceil(details.length / itemsPerPage)}
+                        </span>
+                        <button
+                            onClick={() => setCurrentPage(p => p + 1)}
+                            disabled={currentPage === Math.ceil(details.length / itemsPerPage)}
+                            className="px-3 py-1 text-xs bg-[#5f43b2] text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
             </div>
 
-            <div className="bg-white p-6 pt-0">
+            {/* Channel Data Table */}
+            <div className="bg-white p-6 pt-0 rounded-lg shadow">
+                <h2 className="text-xl font-semibold text-[#5f43b2] mb-4">Channel Data</h2>
                 <div className="overflow-x-auto">
                     <table className="min-w-full border border-gray-300">
                         <thead className="bg-gray-50 border-b">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Channel</th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Channel
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Name
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Status
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
@@ -263,5 +366,4 @@ export default function Dashboard() {
             </div>
         </div>
     );
- 
 }
