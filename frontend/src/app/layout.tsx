@@ -50,3 +50,7 @@ export default function RootLayout({
 //   throw new Error("Function not implemented.");
 // }
 
+// function add(int: any, a: any, int1: any, b: any) {
+//   throw new Error("Function not implemented.");
+// }
+
