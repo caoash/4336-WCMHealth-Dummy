@@ -37,8 +37,8 @@ export async function POST(request: Request) {
             trim: true,
         }) as CsvRow[];
 
-        // Only Parse first few (takes too long otherwise)
-        const limitedRecords = records.slice(0, 8000);
+        // Only Parse first few (takes too long otherwise), Used when making health report
+        const limitedRecords = records.slice(0, 1000);
 
         // Database connection
         const dbPath = path.join(process.cwd(), 'src', 'db', 'database.sqlite');
