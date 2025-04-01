@@ -1,0 +1,39 @@
+
+Basic UI 
+
+As an engineer, I want access to a basic UI with links to each of the pages (React + Tailwind) 
+
+ 
+
+Home Page 
+
+As an engineer, I want access to a home page, with the ability to upload data and run a health report. 
+
+ 
+
+Config Page 
+
+As an engineer, I want access to a config page, where I can create new details or modify existing ones. The details allow users to specify requirements. 
+
+Config Build 
+
+As a developer maintaining this tool internally, I want the health report generation to work on dummy data, which is stored within version control. 
+
+ 
+
+Parsing Algorithm 
+
+As an engineer, I want the health report to utilize an algorithm to process config thresholds to generate a status, rather than using dummy values for status. 
+
+Scaling Up 
+
+•A As an engineer, I want to be able to upload larger files (up to 50,000-line CSV), displayed in a visually appealing way while having health report generation still occur quickly. 
+Additionally, I want to implement pagination so that the UI remains responsive and users can navigate large datasets efficiently. 
+Visualization 
+
+• As an engineer, I want to be able to see visualizations of specific columns of the uploaded data.  
+
+ 
+
+ 
+

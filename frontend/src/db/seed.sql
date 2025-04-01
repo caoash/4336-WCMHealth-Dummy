@@ -29,5 +29,3 @@ INSERT INTO ChannelRow (Channel, Name, Status) VALUES
     ('TTAM', 'Temperature Sensor Failure', 'Inactive'),
     ('TLEM', 'Backup Channel', 'Inactive'),
     ('P21V', 'Test Channel', 'Inactive');
-
-COMMIT; 
