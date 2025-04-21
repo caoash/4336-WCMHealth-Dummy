@@ -24,6 +24,7 @@ Client: SLB
 - Added configuration page to manage conditionals
 - Added 
 
+### Link to Installation guide 
 
 ### Bug Fixes
 - Fixed bug where uploaded files didn't save properly in the database
