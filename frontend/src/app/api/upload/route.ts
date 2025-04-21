@@ -30,7 +30,7 @@ export async function POST(request: Request) {
         // Read file
         const fileText = await file.text();
 
-        // Parse CSV
+        // Parse CSV file
         const records = parse(fileText, {
             columns: true, // Use first row as header
             skip_empty_lines: true,
@@ -38,6 +38,7 @@ export async function POST(request: Request) {
         }) as CsvRow[];
 
         // Only Parse first few (takes too long otherwise), Used when making health report
+        // Can set limit here
         const limitedRecords = records.slice(0, 1000);
 
         // Database connection
