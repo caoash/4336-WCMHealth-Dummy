@@ -164,6 +164,7 @@ export default function HealthReport() {
     const dynamicHeaders =
         currentDetails.length > 0 ? Object.keys(parseDetailsString(currentDetails[0].Details)) : [];
 
+    // Assign Color for each status range here
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
             case 'inactive': return 'text-red-600';
