@@ -13,7 +13,7 @@ interface CsvRow {
 const STATUS_OPTIONS = ['Inactive', 'Active', 'Pending', 'Standby'];
 
 function hashStatus(ssw1Value: number): string {
-    // Hash function using modulo and ssw1Value to distribute statuses better
+    // Function using modulo and ssw1Value to assign statuses better
     const statusIndex = Math.abs(Math.floor(Math.sin(ssw1Value) * 1000)) % STATUS_OPTIONS.length;
     return STATUS_OPTIONS[statusIndex];
 }
@@ -30,15 +30,16 @@ export async function POST(request: Request) {
         // Read file
         const fileText = await file.text();
 
-        // Parse CSV
+        // Parse CSV file
         const records = parse(fileText, {
             columns: true, // Use first row as header
             skip_empty_lines: true,
             trim: true,
         }) as CsvRow[];
 
-        // Only Parse first few (takes too long otherwise)
-        const limitedRecords = records.slice(0, 8000);
+        // Only Parse first few (takes too long otherwise), Used when making health report
+        // Can set limit here
+        const limitedRecords = records.slice(0, 1000);
 
         // Database connection
         const dbPath = path.join(process.cwd(), 'src', 'db', 'database.sqlite');

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link'; // Added for navigation
 import { Line } from 'react-chartjs-2';
 import {
@@ -13,7 +13,8 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -64,6 +65,7 @@ export default function HealthReport() {
     // States for Visualization (using details data)
     const [selectedFeature, setSelectedFeature] = useState<string>('');
     const [detailFeatures, setDetailFeatures] = useState<string[]>([]); // Holds unique keys from Details string
+    const reportRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         fetchDetailsAndChannels();
@@ -140,6 +142,19 @@ export default function HealthReport() {
         }
     };
 
+    const handleExportToPDF = async () => {
+        if (!reportRef.current) return;
+        const canvas = await html2canvas(reportRef.current);
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'px',
+          format: [canvas.width, canvas.height],
+        });
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        pdf.save('health-report.pdf');
+      };    
+
     // Calculate current items for pagination
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -149,6 +164,7 @@ export default function HealthReport() {
     const dynamicHeaders =
         currentDetails.length > 0 ? Object.keys(parseDetailsString(currentDetails[0].Details)) : [];
 
+    // Assign Color for each status range here
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
             case 'inactive': return 'text-red-600';
@@ -204,221 +220,234 @@ export default function HealthReport() {
                 </Link>
             </nav>
 
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-                {/* Updated Title */}
-                <h1 className="font-bold text-2xl text-[#5f43b2]">Health Report</h1>
-                {/* Removed file upload button */}
+            {/* Export PDF Button */}
+            <div className="mb-4 flex justify-end">
+                <button
+                    onClick={handleExportToPDF}
+                    className="px-4 py-2 text-sm bg-[#5f43b2] text-white rounded-md hover:bg-[#4a3590] transition-colors"
+                >
+                    Export Full Report as PDF
+                </button>
             </div>
 
-            {/* System Details Table */}
-            <div className="mb-8 bg-white p-6 pt-4 pb-2 rounded-lg shadow">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold text-[#5f43b2]">System Details</h2>
-                    <button
-                        onClick={() => setShowAddForm(!showAddForm)}
-                        className="px-3 py-1 text-xs bg-[#5f43b2] text-white rounded-md hover:bg-[#4a3590] transition-colors"
-                    >
-                        {showAddForm ? 'Cancel' : 'Add Detail'}
-                    </button>
+            {/* Report Section - WRAPPED HERE */}
+            <div ref={reportRef}>
+                {/* Header */}
+                <div className="flex justify-between items-center mb-6">
+                    {/* Updated Title */}
+                    <h1 className="font-bold text-2xl text-[#5f43b2]">Health Report</h1>
+                    {/* Removed file upload button */}
                 </div>
 
-                {showAddForm && (
-                    <form onSubmit={handleAddDetail} className="mb-4 p-4 bg-gray-50 border border-gray-300">
-                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Details (key:value,...)</label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g., Temp: 25, Voltage: 1.2"
-                                    value={newDetail.Details}
-                                    onChange={(e) => setNewDetail({ ...newDetail, Details: e.target.value })}
-                                    className="w-full px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#5f43b2] text-gray-700"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                 <label className="block text-xs font-medium text-gray-700 mb-1">Value (Overall)</label>
-                                <input
-                                    type="text"
-                                    placeholder="Overall Value"
-                                    value={newDetail.Value}
-                                    onChange={(e) => setNewDetail({ ...newDetail, Value: e.target.value })}
-                                    className="w-full px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#5f43b2] text-gray-700"
-                                    required
-                                />
-                            </div>
-                            <div className="flex gap-2">
-                                 <div className="flex-1">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
-                                    <select
-                                        value={newDetail.Status}
-                                        onChange={(e) => setNewDetail({ ...newDetail, Status: e.target.value as StatusType })}
-                                        className="w-full px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#5f43b2] text-gray-900"
+                {/* System Details Table */}
+                <div className="mb-8 bg-white p-6 pt-4 pb-2 rounded-lg shadow">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-semibold text-[#5f43b2]">System Details</h2>
+                        <button
+                            onClick={() => setShowAddForm(!showAddForm)}
+                            className="px-3 py-1 text-xs bg-[#5f43b2] text-white rounded-md hover:bg-[#4a3590] transition-colors"
+                        >
+                            {showAddForm ? 'Cancel' : 'Add Detail'}
+                        </button>
+                    </div>
+
+                    {showAddForm && (
+                        <form onSubmit={handleAddDetail} className="mb-4 p-4 bg-gray-50 border border-gray-300">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Details (key:value,...)</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g., Temp: 25, Voltage: 1.2"
+                                        value={newDetail.Details}
+                                        onChange={(e) => setNewDetail({ ...newDetail, Details: e.target.value })}
+                                        className="w-full px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#5f43b2] text-gray-700"
                                         required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Value (Overall)</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Overall Value"
+                                        value={newDetail.Value}
+                                        onChange={(e) => setNewDetail({ ...newDetail, Value: e.target.value })}
+                                        className="w-full px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#5f43b2] text-gray-700"
+                                        required
+                                    />
+                                </div>
+                                <div className="flex gap-2">
+                                    <div className="flex-1">
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+                                        <select
+                                            value={newDetail.Status}
+                                            onChange={(e) => setNewDetail({ ...newDetail, Status: e.target.value as StatusType })}
+                                            className="w-full px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#5f43b2] text-gray-900"
+                                            required
+                                        >
+                                            <option value="" disabled>Select Status</option>
+                                            {STATUS_OPTIONS.map((status) => (
+                                                <option key={status} value={status} className="text-gray-900">
+                                                    {status}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        className="self-end px-4 py-1 text-xs bg-[#5f43b2] text-white rounded-md hover:bg-[#4a3590] transition-colors"
                                     >
-                                        <option value="" disabled>Select Status</option>
-                                        {STATUS_OPTIONS.map((status) => (
-                                            <option key={status} value={status} className="text-gray-900">
-                                                {status}
+                                        Add
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    )}
+
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full border border-gray-300">
+                            <thead className="bg-gray-50 border-b">
+                                <tr>
+                                    {dynamicHeaders.map((header) => (
+                                        <th key={header} className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                            {header}
+                                        </th>
+                                    ))}
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Value</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-10"></th> {/* Action column */}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {currentDetails.map((detail, index) => {
+                                    const parsedDetails = parseDetailsString(detail.Details);
+                                    return (
+                                        <tr key={detail.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
+                                            {dynamicHeaders.map((header) => (
+                                                <td key={header} className="px-6 py-2 whitespace-nowrap text-xs text-gray-700">
+                                                    {parsedDetails[header] || '--'} {/* Display '--' if key missing */}
+                                                </td>
+                                            ))}
+                                            <td className="px-6 py-2 whitespace-nowrap text-xs text-gray-700">{detail.Value}</td>
+                                            <td className={`px-6 py-2 whitespace-nowrap text-xs font-medium ${getStatusColor(detail.Status)}`}>{detail.Status}</td>
+                                            <td className="px-6 py-2 whitespace-nowrap text-xs text-center">
+                                                <button
+                                                    onClick={() => handleDeleteDetail(detail.id)}
+                                                    className="text-gray-400 hover:text-red-600 transition-colors"
+                                                    title="Delete"
+                                                >
+                                                    &times; {/* Multiplication sign for 'x' */}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                {currentDetails.length === 0 && (
+                                    <tr>
+                                        <td colSpan={dynamicHeaders.length + 3} className="text-center py-4 text-sm text-gray-500">
+                                            No system details available.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {details.length > itemsPerPage && ( // Show pagination only if needed
+                        <div className="flex justify-end items-center gap-4 mt-4">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 text-xs bg-[#5f43b2] text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Previous
+                            </button>
+                            <span className="text-xs text-gray-500">
+                                Page {currentPage} of {Math.ceil(details.length / itemsPerPage)}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(Math.ceil(details.length / itemsPerPage), p + 1))}
+                                disabled={currentPage === Math.ceil(details.length / itemsPerPage)}
+                                className="px-3 py-1 text-xs bg-[#5f43b2] text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Details Visualization Section */}
+                {details.length > 0 && (
+                    <div className="mb-8 bg-white p-6 rounded-lg shadow">
+                        <h2 className="text-xl font-semibold text-[#5f43b2] mb-4">Details Visualization</h2>
+                        {detailFeatures.length > 0 ? (
+                            <>
+                                <div className="mb-4">
+                                    <label htmlFor="feature-select" className="block text-xs font-medium text-gray-700 mb-1">Select Feature to Visualize:</label>
+                                    <select
+                                        id="feature-select"
+                                        value={selectedFeature}
+                                        onChange={(e) => setSelectedFeature(e.target.value)}
+                                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#5f43b2] text-sm text-gray-900"
+                                    >
+                                        <option value="">-- Select --</option>
+                                        {detailFeatures.map((feature) => (
+                                            <option key={feature} value={feature} className="text-gray-900">
+                                                {feature}
                                             </option>
                                         ))}
                                     </select>
                                 </div>
-                                <button
-                                    type="submit"
-                                    className="self-end px-4 py-1 text-xs bg-[#5f43b2] text-white rounded-md hover:bg-[#4a3590] transition-colors"
-                                >
-                                    Add
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                )}
-
-                <div className="overflow-x-auto">
-                    <table className="min-w-full border border-gray-300">
-                        <thead className="bg-gray-50 border-b">
-                            <tr>
-                                {dynamicHeaders.map((header) => (
-                                    <th key={header} className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                        {header}
-                                    </th>
-                                ))}
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Value</th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-10"></th> {/* Action column */}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                            {currentDetails.map((detail, index) => {
-                                const parsedDetails = parseDetailsString(detail.Details);
-                                return (
-                                    <tr key={detail.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
-                                        {dynamicHeaders.map((header) => (
-                                            <td key={header} className="px-6 py-2 whitespace-nowrap text-xs text-gray-700">
-                                                {parsedDetails[header] || '--'} {/* Display '--' if key missing */}
-                                            </td>
-                                        ))}
-                                        <td className="px-6 py-2 whitespace-nowrap text-xs text-gray-700">{detail.Value}</td>
-                                        <td className={`px-6 py-2 whitespace-nowrap text-xs font-medium ${getStatusColor(detail.Status)}`}>{detail.Status}</td>
-                                        <td className="px-6 py-2 whitespace-nowrap text-xs text-center">
-                                            <button
-                                                onClick={() => handleDeleteDetail(detail.id)}
-                                                className="text-gray-400 hover:text-red-600 transition-colors"
-                                                title="Delete"
-                                            >
-                                                &times; {/* Multiplication sign for 'x' */}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                            {currentDetails.length === 0 && (
-                                <tr>
-                                    <td colSpan={dynamicHeaders.length + 3} className="text-center py-4 text-sm text-gray-500">
-                                        No system details available.
-                                    </td>
-                                </tr>
-                             )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {details.length > itemsPerPage && ( // Show pagination only if needed
-                    <div className="flex justify-end items-center gap-4 mt-4">
-                        <button
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1 text-xs bg-[#5f43b2] text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Previous
-                        </button>
-                        <span className="text-xs text-gray-500">
-                            Page {currentPage} of {Math.ceil(details.length / itemsPerPage)}
-                        </span>
-                        <button
-                            onClick={() => setCurrentPage(p => Math.min(Math.ceil(details.length / itemsPerPage), p + 1))}
-                            disabled={currentPage === Math.ceil(details.length / itemsPerPage)}
-                            className="px-3 py-1 text-xs bg-[#5f43b2] text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Next
-                        </button>
+                                {selectedFeature && chartData && (
+                                    <div style={{height: '300px'}}> {/* Added height constraint */}
+                                        <Line data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
+                                    </div>
+                                )}
+                                {!selectedFeature && (
+                                    <p className="text-xs text-gray-500">Please select a feature from the dropdown above to visualize.</p>
+                                )}
+                                {selectedFeature && !chartData && (
+                                    <p className="text-xs text-red-500">Could not generate chart for '{selectedFeature}'. Ensure this feature exists in the details and contains valid numerical data.</p>
+                                )}
+                            </>
+                        ) : (
+                            <p className="text-sm text-gray-500">No plottable features found in the details data.</p>
+                        )}
                     </div>
                 )}
-            </div>
 
-            {/* Details Visualization Section */}
-            {details.length > 0 && (
-                <div className="mb-8 bg-white p-6 rounded-lg shadow">
-                    <h2 className="text-xl font-semibold text-[#5f43b2] mb-4">Details Visualization</h2>
-                    {detailFeatures.length > 0 ? (
-                        <>
-                            <div className="mb-4">
-                                <label htmlFor="feature-select" className="block text-xs font-medium text-gray-700 mb-1">Select Feature to Visualize:</label>
-                                <select
-                                    id="feature-select"
-                                    value={selectedFeature}
-                                    onChange={(e) => setSelectedFeature(e.target.value)}
-                                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#5f43b2] text-sm text-gray-900"
-                                >
-                                    <option value="">-- Select --</option>
-                                    {detailFeatures.map((feature) => (
-                                        <option key={feature} value={feature} className="text-gray-900">
-                                            {feature}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            {selectedFeature && chartData && (
-                                <div style={{height: '300px'}}> {/* Added height constraint */}
-                                    <Line data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
-                                </div>
-                            )}
-                            {!selectedFeature && (
-                                <p className="text-xs text-gray-500">Please select a feature from the dropdown above to visualize.</p>
-                            )}
-                            {selectedFeature && !chartData && (
-                                <p className="text-xs text-red-500">Could not generate chart for '{selectedFeature}'. Ensure this feature exists in the details and contains valid numerical data.</p>
-                            )}
-                        </>
-                     ) : (
-                         <p className="text-sm text-gray-500">No plottable features found in the details data.</p>
-                     )}
-                </div>
-            )}
-
-            {/* Channel Data Table */}
-            <div className="bg-white p-6 rounded-lg shadow">
-                <h2 className="text-xl font-semibold text-[#5f43b2] mb-4">Channel Data</h2>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full border border-gray-300">
-                        <thead className="bg-gray-50 border-b">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Channel</th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                            {channels.map((channel, index) => (
-                                <tr key={channel.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
-                                    <td className="px-6 py-2 whitespace-nowrap text-[#5f43b2] text-xs">{channel.Channel}</td>
-                                    <td className="px-6 py-2 whitespace-nowrap text-xs text-gray-700">{channel.Name}</td>
-                                    <td className={`px-6 py-2 whitespace-nowrap text-xs font-medium ${getStatusColor(channel.Status)}`}>
-                                        {channel.Status}
-                                    </td>
-                                </tr>
-                            ))}
-                             {channels.length === 0 && (
+                {/* Channel Data Table */}
+                <div className="bg-white p-6 rounded-lg shadow">
+                    <h2 className="text-xl font-semibold text-[#5f43b2] mb-4">Channel Data</h2>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full border border-gray-300">
+                            <thead className="bg-gray-50 border-b">
                                 <tr>
-                                    <td colSpan={3} className="text-center py-4 text-sm text-gray-500">
-                                        No channel data available.
-                                    </td>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Channel</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
                                 </tr>
-                             )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {channels.map((channel, index) => (
+                                    <tr key={channel.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
+                                        <td className="px-6 py-2 whitespace-nowrap text-[#5f43b2] text-xs">{channel.Channel}</td>
+                                        <td className="px-6 py-2 whitespace-nowrap text-xs text-gray-700">{channel.Name}</td>
+                                        <td className={`px-6 py-2 whitespace-nowrap text-xs font-medium ${getStatusColor(channel.Status)}`}>
+                                            {channel.Status}
+                                        </td>
+                                    </tr>
+                                ))}
+                                {channels.length === 0 && (
+                                    <tr>
+                                        <td colSpan={3} className="text-center py-4 text-sm text-gray-500">
+                                            No channel data available.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
