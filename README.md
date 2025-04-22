@@ -10,8 +10,9 @@ Client: SLB
 - Added data visualizations
 - Added pagination support for large datasets
 - Added configuration page to manage conditionals
-- Added report export to PDF
-- Updated algorithm to reflect configurations
+- Added 
+
+### Link to Installation guide 
 
 ### Bug Fixes
 - Fixed bug where uploaded files didn't save properly in the database
