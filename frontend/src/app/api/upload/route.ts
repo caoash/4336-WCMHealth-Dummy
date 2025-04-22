@@ -13,7 +13,7 @@ interface CsvRow {
 const STATUS_OPTIONS = ['Inactive', 'Active', 'Pending', 'Standby'];
 
 function hashStatus(ssw1Value: number): string {
-    // Hash function using modulo and ssw1Value to distribute statuses better
+    // Function using modulo and ssw1Value to assign statuses better
     const statusIndex = Math.abs(Math.floor(Math.sin(ssw1Value) * 1000)) % STATUS_OPTIONS.length;
     return STATUS_OPTIONS[statusIndex];
 }
