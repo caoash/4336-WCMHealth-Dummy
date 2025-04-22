@@ -1,7 +1,20 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
+justin-sprint5
+//Intl add(Intl a, Intl b) { return a + b; }
+//Intl sub(Intl a, Intl b) { return a - b; }
+//Intl mult(Intl a, Intl b) { return a * b; }
+//Intl div(Intl a, Intl b) { return a / b; }
+//Int mod(Intl a, Intl b) {return a % b; }
+//Intl add(Intl a, Intl b) { return a + b; }
+//Intl sub(Intl a, Intl b) { return a - b; }
+//Intl mult(Intl a, Intl b) { return a * b;}
+//Intl div(Intl a, Intl b) { return a / b; }
+//Int mod(Intl a, Intl b) {return a % b; 
+//Intl add_1(Intl a) { return a + 1; }
+//Intl sub_2(Intl a) { return a - 2; }
+main
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
