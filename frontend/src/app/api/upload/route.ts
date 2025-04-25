@@ -9,13 +9,20 @@ interface CsvRow {
     [key: string]: string | number;
 }
 
-// Define the status options
-const STATUS_OPTIONS = ['Inactive', 'Active', 'Pending', 'Standby'];
+// Define the simplified status options for pass/fail
+const STATUS_OPTIONS = ['Pass', 'Fail'];
 
-function hashStatus(ssw1Value: number): string {
-    // Function using modulo and ssw1Value to assign statuses better
-    const statusIndex = Math.abs(Math.floor(Math.sin(ssw1Value) * 1000)) % STATUS_OPTIONS.length;
-    return STATUS_OPTIONS[statusIndex];
+// New function to determine pass/fail based on voltage
+function determinePassFail(row: CsvRow): string {
+    // Check if P20V (voltage) is available and below 16%
+    const voltageValue = parseFloat(row['P20V'] as string);
+    
+    // If voltage is below 16% (threshold), mark as failure
+    if (!isNaN(voltageValue) && voltageValue < 16) {
+        return STATUS_OPTIONS[1]; // Fail
+    }
+    
+    return STATUS_OPTIONS[0]; // Pass
 }
 
 export async function POST(request: Request) {
@@ -79,8 +86,8 @@ export async function POST(request: Request) {
                 console.log(`Processing entry #${entryCount}...`);
             }
 
-            // Assign status based on SSW1 value
-            const status = hashStatus(ssw1Value);
+            // Determine pass/fail status based on voltage threshold
+            const status = determinePassFail(row);
 
             // Combinine all columns except ignored ones
             const details = Object.keys(row)

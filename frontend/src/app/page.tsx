@@ -126,7 +126,7 @@ export default function HomePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Link href="/health-report" className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
                     <h2 className="text-xl font-semibold text-[#5f43b2] mb-2">View Health Report</h2>
-                    <p className="text-gray-600 text-sm">See the latest system details, channel status, and visualizations.</p>
+                    <p className="text-gray-600 text-sm">View pass/fail report showing system health status with voltage monitoring.</p>
                 </Link>
                 <Link href="/configuration" className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
                     <h2 className="text-xl font-semibold text-[#5f43b2] mb-2">Configuration</h2>

@@ -32,7 +32,7 @@ interface ChannelRow {
     Status: string;
 }
 
-const STATUS_OPTIONS = ['Inactive', 'Active', 'Pending', 'Standby', '--'] as const;
+const STATUS_OPTIONS = ['Pass', 'Fail', '--'] as const;
 type StatusType = typeof STATUS_OPTIONS[number];
 
 // Helper function to parse the Details string
@@ -167,10 +167,8 @@ export default function HealthReport() {
     // Assign Color for each status range here
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
-            case 'inactive': return 'text-red-600';
-            case 'active': return 'text-green-600';
-            case 'pending': return 'text-yellow-600';
-            case 'standby': return 'text-gray-600';
+            case 'pass': return 'text-green-600';
+            case 'fail': return 'text-red-600';
             default: return 'text-gray-600';
         }
     };
@@ -235,14 +233,17 @@ export default function HealthReport() {
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
                     {/* Updated Title */}
-                    <h1 className="font-bold text-2xl text-[#5f43b2]">Health Report</h1>
+                    <h1 className="font-bold text-2xl text-[#5f43b2]">System Pass/Fail Report</h1>
                     {/* Removed file upload button */}
                 </div>
 
                 {/* System Details Table */}
                 <div className="mb-8 bg-white p-6 pt-4 pb-2 rounded-lg shadow">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-semibold text-[#5f43b2]">System Details</h2>
+                        <div>
+                            <h2 className="text-xl font-semibold text-[#5f43b2]">System Pass/Fail Status</h2>
+                            <p className="text-xs text-gray-500 mt-1">Failure indicated if voltage (P20V) drops below 16%</p>
+                        </div>
                         <button
                             onClick={() => setShowAddForm(!showAddForm)}
                             className="px-3 py-1 text-xs bg-[#5f43b2] text-white rounded-md hover:bg-[#4a3590] transition-colors"
@@ -379,7 +380,10 @@ export default function HealthReport() {
                 {/* Details Visualization Section */}
                 {details.length > 0 && (
                     <div className="mb-8 bg-white p-6 rounded-lg shadow">
-                        <h2 className="text-xl font-semibold text-[#5f43b2] mb-4">Details Visualization</h2>
+                        <div>
+                            <h2 className="text-xl font-semibold text-[#5f43b2] mb-2">System Metrics Visualization</h2>
+                            <p className="text-xs text-gray-500 mb-4">P20V voltage values below 16% indicate system failure</p>
+                        </div>
                         {detailFeatures.length > 0 ? (
                             <>
                                 <div className="mb-4">
@@ -418,7 +422,10 @@ export default function HealthReport() {
 
                 {/* Channel Data Table */}
                 <div className="bg-white p-6 rounded-lg shadow">
-                    <h2 className="text-xl font-semibold text-[#5f43b2] mb-4">Channel Data</h2>
+                    <div>
+                        <h2 className="text-xl font-semibold text-[#5f43b2] mb-2">Channel Data</h2>
+                        <p className="text-xs text-gray-500 mb-4">Channel status reflects pass/fail condition</p>
+                    </div>
                     <div className="overflow-x-auto">
                         <table className="min-w-full border border-gray-300">
                             <thead className="bg-gray-50 border-b">
